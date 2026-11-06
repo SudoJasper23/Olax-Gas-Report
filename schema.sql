@@ -129,3 +129,9 @@ create policy "expenses partners" on public.expenses for all
 -- insert into public.profiles (id, username, full_name, role)
 -- select id, 'sodeeq', 'Sodeeq Gbadegesin', 'owner' from auth.users where email = 'sodeeq@olaxgas.app'
 -- on conflict (id) do update set role = 'owner', active = true;
+
+-- ---------- let the website (signed-in users) reach the tables; row rules above still apply ----------
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.profiles, public.settings, public.days, public.expenses to authenticated;
+grant usage, select on all sequences in schema public to authenticated;
+grant execute on function public.my_role() to authenticated;

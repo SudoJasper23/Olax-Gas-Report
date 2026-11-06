@@ -52,8 +52,9 @@ function showLogin(msg) {
 async function start() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return showLogin();
-  const { data: prof } = await sb.from("profiles").select("id,username,full_name,role,active").eq("id", session.user.id).maybeSingle();
-  if (!prof || !prof.active) { await sb.auth.signOut(); return showLogin("This account is turned off or not set up. Ask Sodeeq."); }
+  const { data: prof, error: pErr } = await sb.from("profiles").select("id,username,full_name,role,active").eq("id", session.user.id).maybeSingle();
+  if (pErr) { await sb.auth.signOut(); return showLogin("Couldn't load your account. Check your internet and try again."); }
+  if (!prof || !prof.active) { await sb.auth.signOut(); return showLogin("This account is turned off or not set up yet."); }
   me = prof;
   $("loginScreen").hidden = true; $("app").hidden = false;
   document.querySelectorAll("[data-partner]").forEach(a => a.hidden = !isPartner());
@@ -263,7 +264,7 @@ const S = { price: "price_per_kg", cost: "cost_per_kg", salary: "salary", reinve
 function fillSettings() {
   Object.entries(S).forEach(([k, f]) => { $("s-" + k).value = settings[f] ?? ""; $("s-" + k).disabled = !isOwner(); });
   $("setSave").hidden = !isOwner();
-  $("setNote").textContent = isOwner() ? "New prices apply to days saved from now on. Saved days keep the buying cost they were saved with." : "Only Sodeeq can change these.";
+  $("setNote").textContent = isOwner() ? "New prices apply to days saved from now on. Saved days keep the buying cost they were saved with." : "Only the owner can change these.";
   $("e-by").innerHTML = [settings.partner_a, settings.partner_b, "Shop takings"].map(n => '<option>' + esc(n) + '</option>').join("");
 }
 $("setForm").addEventListener("submit", async ev => {
