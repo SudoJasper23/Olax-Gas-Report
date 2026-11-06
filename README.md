@@ -6,7 +6,7 @@ Daily sales and monthly profit reports for the Olax Gas container shop.
 - **Partners** see everything: the monthly report (sales, cost of gas, salary, expenses, net profit, restocking share and the 50/50 split), and they add expenses.
 - **Owner** (Sodeeq) also sets prices, salary and sharing, and creates users and their roles.
 
-Hosting is GitHub Pages (free). Logins and data live in Supabase (free tier).
+**Live site: https://olax-gas.vercel.app** (Vercel, redeploys on every push to `main`). Logins and data live in Supabase (free tier).
 
 ## Setup (about 15 minutes, once)
 
