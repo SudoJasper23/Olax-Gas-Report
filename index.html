@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Olax Gas Sales Book</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<template id="logoTpl">
+  <svg width="44" height="44" viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="31" fill="var(--accent)"/>
+    <circle cx="32" cy="32" r="26" fill="none" stroke="#ffffff" stroke-opacity=".25" stroke-width="2"/>
+    <rect x="26" y="11" width="12" height="6" rx="2" fill="#ffffff"/>
+    <rect x="18" y="17" width="28" height="36" rx="12" fill="#ffffff"/>
+    <rect x="18" y="27" width="28" height="3" fill="var(--accent)" opacity=".25"/>
+    <path d="M32 29c4 5 7 8 7 13a7 7 0 0 1-14 0c0-3 1.5-5 3-6 0 2.5 1.5 4 3 4 0-4-1.5-7 1-11z" fill="var(--flame)"/>
+  </svg>
+</template>
+
+<!-- LOGIN -->
+<div class="wrap login" id="loginScreen">
+  <form class="card" id="loginForm" novalidate>
+    <div class="logo" data-logo><div class="wordmark">OLAX <b>GAS</b><small>LTD · SALES BOOK</small></div></div>
+    <label for="l-user">Username<input id="l-user" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+    <label for="l-pass">Password<input id="l-pass" type="password" autocomplete="current-password" required></label>
+    <button type="submit" id="l-btn">Log in</button>
+    <p class="err" id="l-err" role="alert"></p>
+    <p class="note" style="text-align:center">Forgot your password? Ask Sodeeq to reset your account.</p>
+  </form>
+</div>
+
+<!-- APP -->
+<div class="wrap" id="app" hidden>
+  <header class="top">
+    <div class="logo" data-logo><div class="wordmark">OLAX <b>GAS</b><small>SALES BOOK</small></div></div>
+    <div class="who"><span class="chip" id="whoChip"></span><button class="ghost small" id="logoutBtn" type="button">Log out</button></div>
+  </header>
+  <nav class="tabs" aria-label="Sections" id="tabs">
+    <a href="#daily" data-view="daily">Daily</a>
+    <a href="#monthly" data-view="monthly" data-partner>Monthly</a>
+    <a href="#settings" data-view="settings" data-partner>Settings</a>
+    <a href="#users" data-view="users" data-owner>Users</a>
+  </nav>
+  <div id="banner" class="banner" hidden></div>
+
+  <!-- DAILY -->
+  <section id="view-daily">
+    <form class="card" id="dayForm" novalidate>
+      <h2>Daily sales report</h2>
+      <div class="grid">
+        <label for="d-date">Date<input type="date" id="d-date" required></label>
+        <label for="d-seller">Salesman name<input type="text" id="d-seller" autocomplete="name"></label>
+        <label for="d-kg">Gas sold (kg)<input type="number" id="d-kg" inputmode="decimal" min="0" step="0.1" placeholder="0"></label>
+        <label for="d-price">Price per kg (₦)<span class="hint">Set by the partners</span><input type="number" id="d-price" inputmode="decimal" min="0" readonly></label>
+        <label class="full" for="d-acc">Accessories sold (₦)<span class="hint">Hoses, regulators, burners, cylinders</span><input type="number" id="d-acc" inputmode="decimal" min="0" placeholder="0"></label>
+        <label for="d-cash">Cash in hand (₦)<input type="number" id="d-cash" inputmode="decimal" min="0" placeholder="0"></label>
+        <label for="d-transfer">Transfer / POS received (₦)<input type="number" id="d-transfer" inputmode="decimal" min="0" placeholder="0"></label>
+        <label class="full" for="d-notes">Notes<textarea id="d-notes" placeholder="Anything the partners should know"></textarea></label>
+      </div>
+      <h3>Today's summary</h3>
+      <div class="sum" id="daySum"></div>
+      <div class="hero"><span>Money that should be in hand</span><strong id="dayExpected">₦0</strong></div>
+      <div class="row"><button type="submit" id="saveBtn">Save today's report</button><span class="status" id="saveStatus" role="status"></span></div>
+    </form>
+    <div class="card" style="margin-top:16px">
+      <h2>Recent days</h2>
+      <div class="tablewrap"><table id="recent"><thead><tr><th>Date</th><th>Kg</th><th>Sales</th><th>Cash check</th></tr></thead><tbody></tbody></table></div>
+      <p class="empty" id="recentEmpty">No days saved yet.</p>
+    </div>
+  </section>
+
+  <!-- MONTHLY -->
+  <section id="view-monthly" hidden>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card"><div class="row spread">
+        <h2 id="monthTitle">Monthly report</h2>
+        <label for="m-month" style="flex-direction:row;align-items:center;gap:8px">Month<input type="month" id="m-month" style="width:auto"></label>
+      </div></div>
+      <div class="tiles" id="mTiles"></div>
+      <div class="card chart"><h2>Daily sales</h2><div id="mChart"></div></div>
+      <div class="card"><h2>Profit and sharing</h2>
+        <div class="tablewrap"><table id="mPL"><tbody></tbody></table></div>
+        <div class="split" id="mSplit"></div>
+      </div>
+      <div class="card"><h2>Expenses</h2>
+        <form class="grid" id="expForm" novalidate>
+          <label for="e-date">Date<input type="date" id="e-date"></label>
+          <label for="e-amount">Amount (₦)<input type="number" id="e-amount" inputmode="decimal" min="0"></label>
+          <label for="e-cat">Type<select id="e-cat"><option>Rent / ground fee</option><option>Transport</option><option>Repairs</option><option>Equipment</option><option>Fees / levies</option><option>Other</option></select></label>
+          <label for="e-by">Paid by<select id="e-by"></select></label>
+          <label class="full" for="e-desc">Description<input type="text" id="e-desc" placeholder="e.g. Keke to depot, new hose"></label>
+          <div class="full row"><button type="submit" id="e-add">Add expense</button><span class="status" id="e-status" role="status"></span></div>
+        </form>
+        <p class="note">Gas you buy is already counted as kg sold × buying cost, so don't add gas purchases here.</p>
+        <div class="tablewrap"><table id="mExp"><thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Paid by</th><th>Amount</th><th></th></tr></thead><tbody></tbody></table></div>
+        <p class="empty" id="mExpEmpty">No expenses this month.</p>
+      </div>
+      <div class="card"><h2>Salesman</h2><div class="sum" id="mSeller"></div></div>
+      <div class="card"><h2>Day by day</h2>
+        <div class="tablewrap"><table id="mDays"><thead><tr><th>Date</th><th>Kg</th><th>Gas sales</th><th>Accessories</th><th>Total</th><th>Cash check</th></tr></thead><tbody></tbody></table></div>
+        <p class="empty" id="mEmpty" hidden>No sales recorded for this month.</p>
+      </div>
+      <div class="row"><button type="button" id="copyBtn">Copy report for WhatsApp</button><span class="status" id="copyStatus" role="status"></span></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="view-settings" hidden>
+    <form class="card" id="setForm" novalidate>
+      <h2>Prices, salary and sharing</h2>
+      <p class="note" id="setNote"></p>
+      <div class="grid">
+        <label for="s-price">Selling price per kg (₦)<input type="number" id="s-price" min="0"></label>
+        <label for="s-cost">Buying cost per kg (₦)<span class="hint">What the depot charges</span><input type="number" id="s-cost" min="0"></label>
+        <label for="s-salary">Salesman monthly salary (₦)<input type="number" id="s-salary" min="0"></label>
+        <label for="s-reinvest">Profit kept for restocking (%)<input type="number" id="s-reinvest" min="0" max="100"></label>
+        <label for="s-a">Partner 1<input type="text" id="s-a"></label>
+        <label for="s-b">Partner 2<input type="text" id="s-b"></label>
+      </div>
+      <div class="row"><button type="submit" id="setSave">Save settings</button><span class="status" id="setStatus" role="status"></span></div>
+    </form>
+  </section>
+
+  <!-- USERS (owner) -->
+  <section id="view-users" hidden>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <form class="card" id="userForm" novalidate>
+        <h2>Create a user</h2>
+        <div class="grid">
+          <label for="u-name">Full name<input id="u-name" type="text" autocomplete="off"></label>
+          <label for="u-role">Role<select id="u-role"><option value="salesman">Salesman</option><option value="partner">Partner</option></select></label>
+          <label for="u-user">Username<span class="hint">Letters, numbers, dots. e.g. olajumoke</span><input id="u-user" type="text" autocapitalize="none" spellcheck="false" autocomplete="off"></label>
+          <label for="u-pass">Password<span class="hint">At least 6 characters</span><input id="u-pass" type="text" autocomplete="new-password"></label>
+        </div>
+        <div class="row"><button type="submit" id="u-btn">Create user</button><span class="status" id="u-status" role="status"></span></div>
+        <p class="note">Send the username and password to the person privately. To reset a password, turn the old account off and create a new one.</p>
+      </form>
+      <div class="card"><h2>Users</h2><div id="userList"></div></div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
