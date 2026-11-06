@@ -40,6 +40,7 @@
     <div class="who"><span class="chip" id="whoChip"></span><button class="ghost small" id="logoutBtn" type="button">Log out</button></div>
   </header>
   <nav class="tabs" aria-label="Sections" id="tabs">
+    <a href="#reports" data-view="reports" data-partner>Reports</a>
     <a href="#daily" data-view="daily">Daily</a>
     <a href="#monthly" data-view="monthly" data-partner>Monthly</a>
     <a href="#settings" data-view="settings" data-partner>Settings</a>
@@ -70,6 +71,26 @@
       <h2>Recent days</h2>
       <div class="tablewrap"><table id="recent"><thead><tr><th>Date</th><th>Kg</th><th>Sales</th><th>Cash check</th></tr></thead><tbody></tbody></table></div>
       <p class="empty" id="recentEmpty">No days saved yet.</p>
+    </div>
+  </section>
+
+  <!-- REPORTS (partners): every day and every month in one place -->
+  <section id="view-reports" hidden>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card"><div class="row spread">
+        <h2>All reports</h2>
+        <label for="r-year" style="flex-direction:row;align-items:center;gap:8px">Year<select id="r-year" style="width:auto"></select></label>
+      </div><p class="note" id="r-note">Tap a month to open its full report, or a day to open that day's sales.</p></div>
+      <div class="tiles" id="rTiles"></div>
+      <div class="card"><h2>Monthly reports</h2>
+        <div class="tablewrap"><table id="rMonths"><thead><tr><th>Month</th><th>Days open</th><th>Kg sold</th><th>Sales</th><th>Cost of gas</th><th>Salary</th><th>Expenses</th><th>Net profit</th><th>Each partner</th></tr></thead><tbody></tbody></table></div>
+        <p class="empty" id="rMonthsEmpty" hidden>No sales recorded this year.</p>
+      </div>
+      <div class="card"><div class="row spread"><h2>Daily reports</h2>
+        <label for="r-month" style="flex-direction:row;align-items:center;gap:8px">Show<select id="r-month" style="width:auto"></select></label></div>
+        <div class="tablewrap"><table id="rDays"><thead><tr><th>Date</th><th>Salesman</th><th>Kg</th><th>Gas sales</th><th>Accessories</th><th>Total</th><th>Received</th><th>Cash check</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
+        <p class="empty" id="rDaysEmpty" hidden>No days to show.</p>
+      </div>
     </div>
   </section>
 

@@ -336,15 +336,86 @@ $("userForm").addEventListener("submit", async ev => {
   finally { $("u-btn").disabled = false; }
 });
 
+/* ---------------- reports (partners) ---------------- */
+let allDays = [], allExp = [];
+async function loadReports() {
+  const [d, x] = await Promise.all([
+    sb.from("days").select("*").order("day", { ascending: false }).limit(5000),
+    sb.from("expenses").select("date,amount").limit(5000)
+  ]);
+  if (d.error || x.error) { banner("Couldn't load reports. Check your internet."); return; }
+  banner("");
+  allDays = d.data; allExp = x.data;
+  const years = [...new Set(allDays.map(r => r.day.slice(0, 4)).concat(allExp.map(e => e.date.slice(0, 4))))].sort().reverse();
+  if (!years.length) years.push(today().slice(0, 4));
+  const ys = $("r-year"), keep = ys.value;
+  ys.innerHTML = years.map(y => '<option>' + y + '</option>').join("");
+  ys.value = years.includes(keep) ? keep : years[0];
+  renderReports();
+}
+function renderReports() {
+  const y = $("r-year").value;
+  const days = allDays.filter(r => r.day.startsWith(y));
+  const months = {};
+  days.forEach(r => {
+    const ym = r.day.slice(0, 7), c = calc(r);
+    const m = months[ym] || (months[ym] = { kg: 0, total: 0, cogs: 0, open: 0, exp: 0, short: 0 });
+    m.kg += c.kg; m.total += c.total; m.cogs += c.cogs; if (c.opened) m.open++;
+    if (c.received > 0 && c.diff < -.5) m.short += -c.diff;
+  });
+  allExp.filter(e => e.date.startsWith(y)).forEach(e => {
+    const ym = e.date.slice(0, 7);
+    (months[ym] || (months[ym] = { kg: 0, total: 0, cogs: 0, open: 0, exp: 0, short: 0 })).exp += num(e.amount);
+  });
+  const rp = Math.min(100, Math.max(0, num(settings.reinvest_pct)));
+  const yt = { kg: 0, total: 0, net: 0, share: 0, short: 0 };
+  const keys = Object.keys(months).sort().reverse();
+  $("rMonths").querySelector("tbody").innerHTML = keys.map(ym => {
+    const m = months[ym], salary = m.open > 0 ? num(settings.salary) : 0;
+    const net = m.total - m.cogs - salary - m.exp, each = (net - (net > 0 ? net * rp / 100 : 0)) / 2;
+    yt.kg += m.kg; yt.total += m.total; yt.net += net; yt.share += each; yt.short += m.short;
+    const [yy, mm] = ym.split("-");
+    return '<tr class="link" tabindex="0" data-month="' + ym + '"><td>' + MONTHS[+mm - 1] + ' ' + yy + '</td><td>' + m.open + '</td><td>' + kgf(m.kg) + '</td><td>' + naira(m.total) +
+      '</td><td>' + naira(m.cogs) + '</td><td>' + naira(salary) + '</td><td>' + naira(m.exp) + '</td><td' + (net < 0 ? ' class="neg"' : '') + '><b>' + naira(net) + '</b></td><td>' + naira(each) + '</td></tr>';
+  }).join("");
+  $("rMonthsEmpty").hidden = keys.length > 0;
+  $("rTiles").innerHTML = tile("Sales in " + y, naira(yt.total)) + tile("Gas sold", kgf(yt.kg)) + tile("Cash short", naira(yt.short)) + tile("Net profit", naira(yt.net), "profit");
+
+  const ms = $("r-month"), keepM = ms.value;
+  ms.innerHTML = '<option value="">All of ' + y + '</option>' + keys.map(ym => { const [yy, mm] = ym.split("-"); return '<option value="' + ym + '">' + MONTHS[+mm - 1] + ' ' + yy + '</option>'; }).join("");
+  ms.value = keys.includes(keepM) ? keepM : "";
+  renderReportDays();
+}
+function renderReportDays() {
+  const y = $("r-year").value, ym = $("r-month").value;
+  const rows = allDays.filter(r => r.day.startsWith(ym || y));
+  $("rDays").querySelector("tbody").innerHTML = rows.map(r => {
+    const c = calc(r);
+    return '<tr class="link" tabindex="0" data-day="' + r.day + '"><td>' + fmtDate(r.day) + ' ' + r.day.slice(0, 4) + '</td><td class="text">' + esc(r.seller) + '</td><td>' + kgf(c.kg) + '</td><td>' + naira(c.gasSales) +
+      '</td><td>' + naira(c.acc) + '</td><td><b>' + naira(c.total) + '</b></td><td>' + naira(c.received) + '</td><td>' + cashPill(c) + '</td><td class="notes">' + esc(r.notes) + '</td></tr>';
+  }).join("");
+  $("rDaysEmpty").hidden = rows.length > 0;
+}
+$("r-year").addEventListener("change", renderReports);
+$("r-month").addEventListener("change", renderReportDays);
+function openRow(e) {
+  const tr = e.target.closest("tr.link"); if (!tr) return;
+  if (e.type === "keydown" && e.key !== "Enter") return;
+  if (tr.dataset.month) { $("m-month").value = tr.dataset.month; location.hash = "monthly"; }
+  if (tr.dataset.day) { $("d-date").value = tr.dataset.day; fillForm(tr.dataset.day); location.hash = "daily"; }
+}
+["click", "keydown"].forEach(t => { $("rMonths").addEventListener(t, openRow); $("rDays").addEventListener(t, openRow); });
+
 /* ---------------- routing ---------------- */
-const VIEWS = ["daily", "monthly", "settings", "users"];
+const VIEWS = ["reports", "daily", "monthly", "settings", "users"];
 function allowed(v) { return v === "daily" || (v === "users" ? isOwner() : isPartner()); }
 function route() {
   if (!me) return;
-  let v = location.hash.slice(1); if (!VIEWS.includes(v) || !allowed(v)) v = "daily";
+  let v = location.hash.slice(1); if (!VIEWS.includes(v) || !allowed(v)) v = isPartner() ? "reports" : "daily";
   VIEWS.forEach(n => $("view-" + n).hidden = n !== v);
   document.querySelectorAll("#tabs a").forEach(a => { a.removeAttribute("aria-current"); if (a.dataset.view === v) a.setAttribute("aria-current", "page"); });
   if (v === "monthly") loadMonth();
+  if (v === "reports") loadReports();
   if (v === "users") loadUsers();
   if (v === "daily") loadRecent();
 }

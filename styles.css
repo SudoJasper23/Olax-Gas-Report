@@ -114,3 +114,10 @@ tr.total td{font-weight:700;border-top:2px solid var(--ink)}
 .badge{font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--bad-bg);color:var(--bad)}
 .err{color:var(--bad);font-size:14px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+/* reports */
+tr.link{cursor:pointer}
+tr.link:hover td{background:var(--tint)}
+tr.link:focus-visible{outline:3px solid var(--flame);outline-offset:-3px}
+td.neg{color:var(--bad)}
+td.notes{white-space:normal;min-width:140px;max-width:260px;text-align:left;color:var(--muted)}
