@@ -11,7 +11,7 @@ const today = () => ymd(new Date());
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const fmtDate = id => { const [, m, d] = id.split("-"); return +d + " " + MONTHS[+m - 1].slice(0, 3); };
-const emailFor = u => u.trim().toLowerCase() + "@" + (CFG.EMAIL_DOMAIN || "olaxgas.app");
+const emailFor = u => { u = u.trim().toLowerCase(); return u.includes("@") ? u : u + "@" + (CFG.EMAIL_DOMAIN || "olaxgas.app"); };
 
 document.querySelectorAll("[data-logo]").forEach(el => el.prepend($("logoTpl").content.cloneNode(true)));
 
