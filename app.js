@@ -355,7 +355,7 @@ function renderUsers() {
       out.textContent = error ? "Couldn't reset: " + error.message : "Done. New password: " + pw;
       if (!error) rf.querySelector("input").value = "";
     };
-    acts.append(rb);
+    if (u.role !== "owner") acts.append(rb);
     d.append(info, acts, rf); list.append(d);
   });
 }

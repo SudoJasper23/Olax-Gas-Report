@@ -42,6 +42,7 @@ returns void
 language plpgsql security definer set search_path = public, auth, extensions as $$
 begin
   if public.my_role() is distinct from 'owner' then raise exception 'Only the owner can reset passwords'; end if;
+  if p_user = auth.uid() then raise exception 'Change your own password with Forgot password on the login page'; end if;
   if length(coalesce(p_password,'')) < 6 then raise exception 'Password must be at least 6 characters'; end if;
   update auth.users set encrypted_password = crypt(p_password, gen_salt('bf')), updated_at = now() where id = p_user;
   if not found then raise exception 'User not found'; end if;
