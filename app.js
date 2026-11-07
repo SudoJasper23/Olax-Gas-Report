@@ -44,12 +44,51 @@ $("loginForm").addEventListener("submit", async ev => {
 });
 $("logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); showLogin(); });
 
+const isFakeEmail = e => e.endsWith("@" + (CFG.EMAIL_DOMAIN || "olaxgas.app"));
+$("forgotBtn").addEventListener("click", () => {
+  const u = $("l-user").value.trim();
+  $("forgotBox").hidden = false;
+  if (u.includes("@") && !isFakeEmail(u.toLowerCase())) {
+    $("forgotMsg").textContent = "We can email a reset link to " + u + ".";
+    $("forgotEmailRow").hidden = false;
+  } else {
+    $("forgotMsg").textContent = "Ask the shop owner to reset your password. They can set a new one for you from the Users page. (If you log in with an email address, type it above and press Forgot password again.)";
+    $("forgotEmailRow").hidden = true;
+  }
+});
+$("forgotSend").addEventListener("click", async () => {
+  const email = $("l-user").value.trim().toLowerCase();
+  $("forgotSend").disabled = true;
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  $("forgotSend").disabled = false;
+  $("forgotMsg").textContent = error ? "Couldn't send the email: " + error.message : "Check your inbox for the reset link, then open it on this device.";
+  if (!error) $("forgotEmailRow").hidden = true;
+});
+function showReset() {
+  $("app").hidden = true; $("loginScreen").hidden = false;
+  $("loginForm").hidden = true; $("resetForm").hidden = false;
+}
+$("resetForm").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const a = $("n-pass").value, b = $("n-pass2").value;
+  if (a.length < 6) { $("n-err").textContent = "Use at least 6 characters."; return; }
+  if (a !== b) { $("n-err").textContent = "The two passwords don't match."; return; }
+  $("n-btn").disabled = true;
+  const { error } = await sb.auth.updateUser({ password: a });
+  $("n-btn").disabled = false;
+  if (error) { $("n-err").textContent = "Couldn't save: " + error.message; return; }
+  $("resetForm").hidden = true; $("loginForm").hidden = false; $("n-pass").value = $("n-pass2").value = "";
+  history.replaceState(null, "", location.pathname);
+  await start();
+});
+
 function showLogin(msg) {
-  me = null; $("app").hidden = true; $("loginScreen").hidden = false;
+  me = null; $("resetForm").hidden = true; $("loginForm").hidden = false; $("app").hidden = true; $("loginScreen").hidden = false;
   $("l-err").textContent = msg || ""; history.replaceState(null, "", location.pathname);
 }
 
 async function start() {
+  if (recovering || /type=recovery/.test(location.hash)) { recovering = true; return showReset(); }
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return showLogin();
   const { data: prof, error: pErr } = await sb.from("profiles").select("id,username,full_name,role,active").eq("id", session.user.id).maybeSingle();
@@ -278,9 +317,6 @@ $("setForm").addEventListener("submit", async ev => {
 });
 
 /* ---------------- users (owner) ---------------- */
-// A second client that doesn't keep the new user's session, so the owner stays logged in.
-const sbNew = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false, storageKey: "olax-new-user" } });
-
 async function loadUsers() {
   const { data, error } = await sb.from("profiles").select("*").order("created_at");
   if (error) { banner("Couldn't load users."); return; }
@@ -306,7 +342,21 @@ function renderUsers() {
       tog.onclick = () => updateUser(u.id, { active: !u.active });
       acts.append(sel, tog);
     }
-    d.append(info, acts); list.append(d);
+    const rb = document.createElement("button"); rb.type = "button"; rb.className = "small ghost"; rb.textContent = "Reset password";
+    const rf = document.createElement("form"); rf.className = "row full"; rf.hidden = true; rf.noValidate = true; rf.style.width = "100%";
+    const pid = "rp-" + u.id;
+    rf.innerHTML = '<label for="' + pid + '" style="flex:1">New password for this user<input id="' + pid + '" type="text" autocomplete="off" minlength="6"></label><button type="submit" class="small">Save</button><span class="status" role="status"></span>';
+    rb.onclick = () => { rf.hidden = !rf.hidden; if (!rf.hidden) rf.querySelector("input").focus(); };
+    rf.onsubmit = async ev => {
+      ev.preventDefault();
+      const pw = rf.querySelector("input").value, out = rf.querySelector(".status");
+      if (pw.length < 6) { out.textContent = "At least 6 characters."; return; }
+      const { error } = await sb.rpc("owner_set_password", { p_user: u.id, p_password: pw });
+      out.textContent = error ? "Couldn't reset: " + error.message : "Done. New password: " + pw;
+      if (!error) rf.querySelector("input").value = "";
+    };
+    acts.append(rb);
+    d.append(info, acts, rf); list.append(d);
   });
 }
 async function updateUser(id, patch) {
@@ -323,12 +373,8 @@ $("userForm").addEventListener("submit", async ev => {
   if (users.some(u => u.username === username)) { st.textContent = "That username is taken."; return; }
   $("u-btn").disabled = true; st.textContent = "Creating…";
   try {
-    const { data, error } = await sbNew.auth.signUp({ email: emailFor(username), password });
+    const { error } = await sb.rpc("owner_create_user", { p_email: emailFor(username), p_password: password, p_username: username, p_full_name: full_name, p_role: role });
     if (error) throw new Error(error.message);
-    if (!data.user || (data.user.identities && data.user.identities.length === 0)) throw new Error("That username is taken.");
-    const { error: e2 } = await sb.from("profiles").insert({ id: data.user.id, username, full_name, role });
-    if (e2) throw new Error(e2.message);
-    await sbNew.auth.signOut();
     st.textContent = "Created " + full_name + ". Username: " + username + " · Password: " + password;
     $("u-name").value = ""; $("u-user").value = ""; $("u-pass").value = "";
     loadUsers();
@@ -421,6 +467,7 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 
-sb.auth.onAuthStateChange((evt) => { if (evt === "SIGNED_OUT") showLogin(); });
+let recovering = false;
+sb.auth.onAuthStateChange((evt) => { if (evt === "SIGNED_OUT") showLogin(); if (evt === "PASSWORD_RECOVERY") { recovering = true; showReset(); } });
 start();
 })();

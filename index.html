@@ -29,7 +29,18 @@
     <label for="l-pass">Password<input id="l-pass" type="password" autocomplete="current-password" required></label>
     <button type="submit" id="l-btn">Log in</button>
     <p class="err" id="l-err" role="alert"></p>
-    <p class="note" style="text-align:center">Forgot your password? Contact the shop owner to reset it.</p>
+    <button type="button" class="ghost small" id="forgotBtn">Forgot password?</button>
+    <div id="forgotBox" class="sum" hidden>
+      <p class="note" id="forgotMsg"></p>
+      <div class="row" id="forgotEmailRow" hidden><button type="button" class="small" id="forgotSend">Email me a reset link</button></div>
+    </div>
+  </form>
+  <form class="card" id="resetForm" hidden novalidate>
+    <div class="logo" data-logo><div class="wordmark">OLAX <b>GAS</b><small>SET A NEW PASSWORD</small></div></div>
+    <label for="n-pass">New password<span class="hint">At least 6 characters</span><input id="n-pass" type="password" autocomplete="new-password"></label>
+    <label for="n-pass2">Type it again<input id="n-pass2" type="password" autocomplete="new-password"></label>
+    <button type="submit" id="n-btn">Save new password</button>
+    <p class="err" id="n-err" role="alert"></p>
   </form>
 </div>
 
@@ -158,7 +169,7 @@
           <label for="u-pass">Password<span class="hint">At least 6 characters</span><input id="u-pass" type="text" autocomplete="new-password"></label>
         </div>
         <div class="row"><button type="submit" id="u-btn">Create user</button><span class="status" id="u-status" role="status"></span></div>
-        <p class="note">Send the username and password to the person privately. To reset a password, turn the old account off and create a new one.</p>
+        <p class="note">Send the username and password to the person privately. If someone forgets their password, press "Reset password" next to their name below.</p>
       </form>
       <div class="card"><h2>Users</h2><div id="userList"></div></div>
     </div>

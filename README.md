@@ -12,7 +12,7 @@ Daily sales and monthly profit reports for the Olax Gas container shop.
 
 ### 1. Supabase
 1. Create a free project at https://supabase.com.
-2. **SQL Editor → New query**: paste all of `schema.sql` and press **Run**.
+2. **SQL Editor → New query**: paste all of `schema.sql` and press **Run**. Then do the same with `admin.sql` (lets the owner create users and reset passwords).
 3. **Authentication → Sign In / Providers → Email**: turn **off** "Confirm email". Leave "Allow new users to sign up" **on** (the Users page needs it; anyone who signs up without a profile gets no access).
 4. **Authentication → Users → Add user → Create new user**: email `sodeeq@olaxgas.app`, your password, tick **Auto Confirm User**.
 5. Back in **SQL Editor**, run:
@@ -34,6 +34,6 @@ Log in with username `sodeeq`. Go to **Settings** and enter real prices, buying 
 
 ## Notes
 - Usernames are turned into `username@olaxgas.app` behind the scenes. No email is sent.
-- Forgotten password: turn the old account off in **Users** and create a new one (or reset it in Supabase → Authentication → Users).
+- Forgotten password: the owner presses **Reset password** next to the person on the **Users** page. Anyone who logs in with a real email can also use **Forgot password?** on the login page to get a reset link.
 - The anon key in `config.js` is designed to be public. The database rules in `schema.sql` decide who can read and change what.
 - Supabase pauses free projects after a week with no activity. Daily use keeps it awake; if it pauses, press **Restore** in the Supabase dashboard.
