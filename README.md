@@ -4,6 +4,7 @@ Daily sales and monthly profit reports for the Olax Gas container shop.
 
 - **Salesman** logs in and records each day's gas sold (kg), accessories, cash and transfers. He sees the last 14 days and can save today or the 2 days before.
 - **Partners** see everything: the monthly report (sales, cost of gas, salary, expenses, net profit, restocking share and the 50/50 split), and they add expenses.
+- **POS page:** the salesman records each sale as it happens (gas by kg or by ₦ amount, accessories, cash/POS/transfer). One button turns the day's sales into the daily report.
 - **Owner** (Sodeeq) also sets prices, salary and sharing, and creates users and their roles.
 
 **Live site: https://olax-gas.vercel.app** (Vercel, redeploys on every push to `main`). Logins and data live in Supabase (free tier).
@@ -12,7 +13,7 @@ Daily sales and monthly profit reports for the Olax Gas container shop.
 
 ### 1. Supabase
 1. Create a free project at https://supabase.com.
-2. **SQL Editor → New query**: paste all of `schema.sql` and press **Run**. Then do the same with `admin.sql` (lets the owner create users and reset passwords).
+2. **SQL Editor → New query**: paste all of `schema.sql` and press **Run**. Then do the same with `admin.sql` (lets the owner create users and reset passwords) and `pos.sql` (the POS page).
 3. **Authentication → Sign In / Providers → Email**: turn **off** "Confirm email". Leave "Allow new users to sign up" **on** (the Users page needs it; anyone who signs up without a profile gets no access).
 4. **Authentication → Users → Add user → Create new user**: email `sodeeq@olaxgas.app`, your password, tick **Auto Confirm User**.
 5. Back in **SQL Editor**, run:

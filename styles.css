@@ -121,3 +121,15 @@ tr.link:hover td{background:var(--tint)}
 tr.link:focus-visible{outline:3px solid var(--flame);outline-offset:-3px}
 td.neg{color:var(--bad)}
 td.notes{white-space:normal;min-width:140px;max-width:260px;text-align:left;color:var(--muted)}
+
+/* POS */
+.seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px}
+.segbtn{flex:1;background:transparent;border:0;color:var(--muted);padding:10px 8px}
+.segbtn.on{background:var(--accent);color:var(--accent-ink)}
+.quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.quick button{background:var(--tint);color:var(--accent);border-color:transparent;padding:14px 6px;font-size:17px}
+.posout{display:flex;align-items:flex-end;justify-content:flex-end;font-family:var(--display);font-size:28px;color:var(--accent);font-variant-numeric:tabular-nums;padding-bottom:6px}
+button.big{flex:1;font-size:18px;padding:14px}
+.method{font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--tint);color:var(--accent)}
+.method.cash{background:var(--good-bg);color:var(--good)}
+@media (max-width:560px){.quick{grid-template-columns:repeat(3,minmax(0,1fr))}}

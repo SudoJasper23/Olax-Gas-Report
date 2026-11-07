@@ -52,12 +52,59 @@
   </header>
   <nav class="tabs" aria-label="Sections" id="tabs">
     <a href="#reports" data-view="reports" data-partner>Reports</a>
+    <a href="#pos" data-view="pos">POS</a>
     <a href="#daily" data-view="daily">Daily</a>
     <a href="#monthly" data-view="monthly" data-partner>Monthly</a>
     <a href="#settings" data-view="settings" data-partner>Settings</a>
     <a href="#users" data-view="users" data-owner>Users</a>
   </nav>
   <div id="banner" class="banner" hidden></div>
+
+  <!-- POS: one entry per sale -->
+  <section id="view-pos" hidden>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <form class="card" id="posForm" novalidate>
+        <div class="row spread"><h2>New gas sale</h2><span class="chip" id="posPrice"></span></div>
+        <div class="seg" role="group" aria-label="Sell by">
+          <button type="button" class="segbtn on" data-by="kg">By kg</button>
+          <button type="button" class="segbtn" data-by="amount">By amount (₦)</button>
+        </div>
+        <div class="quick" id="posQuick"></div>
+        <div class="grid">
+          <label for="p-kg" id="p-kg-wrap">Kg<input id="p-kg" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0"></label>
+          <label for="p-amt" id="p-amt-wrap" hidden>Amount (₦)<input id="p-amt" type="number" inputmode="decimal" min="0" step="50" placeholder="0"></label>
+          <div class="posout" id="posOut">₦0</div>
+        </div>
+        <div class="seg" role="group" aria-label="Payment" id="posMethod">
+          <button type="button" class="segbtn on" data-m="cash">Cash</button>
+          <button type="button" class="segbtn" data-m="pos">POS</button>
+          <button type="button" class="segbtn" data-m="transfer">Transfer</button>
+        </div>
+        <div class="row"><button type="submit" class="big" id="p-btn">Record sale</button><span class="status" id="p-status" role="status"></span></div>
+      </form>
+
+      <form class="card" id="accForm" novalidate>
+        <h2>Accessory sale</h2>
+        <div class="grid">
+          <label for="a-item">Item<input id="a-item" type="text" list="accList" placeholder="e.g. Hose, regulator, burner"></label>
+          <datalist id="accList"><option>Hose</option><option>Regulator</option><option>Burner</option><option>Cylinder</option><option>Hose clip</option></datalist>
+          <label for="a-amt">Amount (₦)<input id="a-amt" type="number" inputmode="decimal" min="0" step="50"></label>
+          <label for="a-method">Paid by<select id="a-method"><option value="cash">Cash</option><option value="pos">POS</option><option value="transfer">Transfer</option></select></label>
+        </div>
+        <div class="row"><button type="submit" id="a-btn">Record accessory</button><span class="status" id="a-status" role="status"></span></div>
+      </form>
+
+      <div class="card">
+        <div class="row spread"><h2 id="posDayTitle">Today's sales</h2>
+          <label for="p-day" style="flex-direction:row;align-items:center;gap:8px" id="p-day-wrap">Day<input type="date" id="p-day" style="width:auto"></label></div>
+        <div class="tiles" id="posTiles"></div>
+        <div class="tablewrap"><table id="posList"><thead><tr><th>Time</th><th>Sale</th><th>Paid</th><th>Amount</th><th></th></tr></thead><tbody></tbody></table></div>
+        <p class="empty" id="posEmpty">No sales recorded yet.</p>
+        <div class="row"><button type="button" class="ghost" id="posToDaily">Fill this day's daily report from POS</button><span class="status" id="posToDailyStatus" role="status"></span></div>
+        <p class="note">Cash goes into "Cash in hand"; POS and transfers go into "Transfer / POS". You can still add notes on the Daily page.</p>
+      </div>
+    </div>
+  </section>
 
   <!-- DAILY -->
   <section id="view-daily">

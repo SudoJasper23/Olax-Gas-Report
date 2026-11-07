@@ -98,7 +98,6 @@ async function start() {
   $("loginScreen").hidden = true; $("app").hidden = false;
   document.querySelectorAll("[data-partner]").forEach(a => a.hidden = !isPartner());
   document.querySelectorAll("[data-owner]").forEach(a => a.hidden = !isOwner());
-  $("tabs").hidden = !isPartner();
   $("whoChip").textContent = ({ owner: "Owner", partner: "Partner", salesman: "Salesman" }[me.role]) + " · " + me.full_name;
   $("d-price").readOnly = !isPartner();
   $("d-date").value = today(); $("m-month").value = today().slice(0, 7); $("e-date").value = today();
@@ -452,16 +451,123 @@ function openRow(e) {
 }
 ["click", "keydown"].forEach(t => { $("rMonths").addEventListener(t, openRow); $("rDays").addEventListener(t, openRow); });
 
+/* ---------------- POS ---------------- */
+let posBy = "kg", posMethod = "cash", posSales = [];
+const QUICK_KG = [3, 5, 6, 12.5, 25, 50];
+const METHOD = { cash: "Cash", pos: "POS", transfer: "Transfer" };
+$("posQuick").innerHTML = QUICK_KG.map(k => '<button type="button" data-kg="' + k + '">' + k + ' kg</button>').join("");
+$("posQuick").addEventListener("click", e => {
+  const k = e.target.dataset && e.target.dataset.kg; if (!k) return;
+  setBy("kg"); $("p-kg").value = k; posCalc();
+});
+document.querySelectorAll("[data-by]").forEach(b => b.addEventListener("click", () => setBy(b.dataset.by)));
+function setBy(by) {
+  posBy = by;
+  document.querySelectorAll("[data-by]").forEach(b => b.classList.toggle("on", b.dataset.by === by));
+  $("p-kg-wrap").hidden = by !== "kg"; $("p-amt-wrap").hidden = by !== "amount";
+  posCalc();
+}
+$("posMethod").addEventListener("click", e => {
+  const m = e.target.dataset && e.target.dataset.m; if (!m) return;
+  posMethod = m; $("posMethod").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
+});
+function posKg() {
+  const price = num(settings.price_per_kg);
+  if (posBy === "kg") return num($("p-kg").value);
+  return price > 0 ? Math.round(num($("p-amt").value) / price * 1000) / 1000 : 0;
+}
+function posCalc() {
+  const kg = posKg(), price = num(settings.price_per_kg);
+  $("posOut").textContent = posBy === "kg" ? naira(kg * price) : kgf(kg);
+  $("posPrice").textContent = naira(price) + " / kg";
+}
+$("p-kg").addEventListener("input", posCalc); $("p-amt").addEventListener("input", posCalc);
+
+async function addSale(rec, btn, st) {
+  btn.disabled = true; st.textContent = "Saving…";
+  const { error } = await sb.from("sales").insert(rec);
+  btn.disabled = false;
+  if (error) { st.textContent = "Couldn't save. Check your internet and try again."; return false; }
+  st.textContent = "Saved."; setTimeout(() => { if (st.textContent === "Saved.") st.textContent = ""; }, 2500);
+  if ($("p-day").value === rec.day) loadPos();
+  return true;
+}
+$("posForm").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const kg = posKg();
+  if (kg <= 0) { $("p-status").textContent = "Enter the kg or the amount."; return; }
+  const ok = await addSale({ day: today(), kind: "gas", kg, amount: 0, method: posMethod }, $("p-btn"), $("p-status"));
+  if (ok) { $("p-kg").value = ""; $("p-amt").value = ""; posCalc(); }
+});
+$("accForm").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const item = $("a-item").value.trim(), amount = num($("a-amt").value);
+  if (!item || amount <= 0) { $("a-status").textContent = "Enter the item and amount."; return; }
+  const ok = await addSale({ day: today(), kind: "accessory", item, amount, method: $("a-method").value }, $("a-btn"), $("a-status"));
+  if (ok) { $("a-item").value = ""; $("a-amt").value = ""; }
+});
+
+async function loadPos() {
+  if (!$("p-day").value) $("p-day").value = today();
+  $("p-day-wrap").hidden = !isPartner();
+  posCalc();
+  const day = $("p-day").value;
+  const { data, error } = await sb.from("sales").select("*").eq("day", day).order("sold_at", { ascending: false });
+  if (error) { banner("Couldn't load sales. Check your internet."); return; }
+  banner(""); posSales = data; renderPos();
+}
+function posTotals() {
+  const t = { kg: 0, gas: 0, acc: 0, cash: 0, pos: 0, transfer: 0, n: posSales.length };
+  posSales.forEach(x => { const a = num(x.amount); if (x.kind === "gas") { t.kg += num(x.kg); t.gas += a; } else t.acc += a; t[x.method] += a; });
+  return t;
+}
+function renderPos() {
+  const day = $("p-day").value, t = posTotals();
+  $("posDayTitle").textContent = day === today() ? "Today's sales" : "Sales on " + fmtDate(day) + " " + day.slice(0, 4);
+  $("posTiles").innerHTML = tile("Total", naira(t.gas + t.acc), "profit") + tile("Gas sold", kgf(t.kg)) + tile("Cash", naira(t.cash)) + tile("POS + transfer", naira(t.pos + t.transfer));
+  const fresh = Date.now() - 30 * 60 * 1000;
+  $("posList").querySelector("tbody").innerHTML = posSales.map(x => {
+    const tm = new Date(x.sold_at), time = pad(tm.getHours()) + ":" + pad(tm.getMinutes());
+    const what = x.kind === "gas" ? kgf(num(x.kg)) + " gas" : esc(x.item);
+    const canUndo = isPartner() || (x.created_by === me.id && tm.getTime() > fresh);
+    return '<tr><td>' + time + '</td><td class="text">' + what + '</td><td><span class="method ' + x.method + '">' + METHOD[x.method] + '</span></td><td>' + naira(num(x.amount)) +
+      '</td><td>' + (canUndo ? '<button type="button" class="danger small" data-delsale="' + x.id + '">Undo</button>' : '') + '</td></tr>';
+  }).join("");
+  $("posEmpty").hidden = posSales.length > 0;
+}
+$("p-day").addEventListener("change", loadPos);
+$("posList").addEventListener("click", async e => {
+  const id = e.target.dataset && e.target.dataset.delsale; if (!id) return;
+  e.target.disabled = true;
+  const { error } = await sb.from("sales").delete().eq("id", id);
+  if (error) { e.target.disabled = false; banner("Couldn't undo that sale."); } else loadPos();
+});
+let posFillConfirm = false;
+$("posToDaily").addEventListener("click", async () => {
+  const day = $("p-day").value, t = posTotals(), st = $("posToDailyStatus");
+  if (!t.n) { st.textContent = "No POS sales on this day."; return; }
+  if (days[day] && !posFillConfirm) { posFillConfirm = true; st.textContent = "This day already has a daily report. Press again to replace its figures with the POS totals."; return; }
+  posFillConfirm = false;
+  const rec = { day, kg: Math.round(t.kg * 100) / 100, price: num(settings.price_per_kg), acc: t.acc, cash: t.cash, transfer: t.pos + t.transfer,
+    seller: (days[day] && days[day].seller) || (me.role === "salesman" ? me.full_name : ""), notes: (days[day] && days[day].notes) || "" };
+  st.textContent = "Saving…";
+  const { data, error } = await sb.from("days").upsert(rec, { onConflict: "day" }).select().maybeSingle();
+  if (error) { st.textContent = "Couldn't fill the daily report: " + error.message; return; }
+  if (data) days[day] = data;
+  st.textContent = "Daily report for " + fmtDate(day) + " filled from " + t.n + " sales.";
+});
+
 /* ---------------- routing ---------------- */
-const VIEWS = ["reports", "daily", "monthly", "settings", "users"];
-function allowed(v) { return v === "daily" || (v === "users" ? isOwner() : isPartner()); }
+const VIEWS = ["reports", "pos", "daily", "monthly", "settings", "users"];
+function allowed(v) { return v === "daily" || v === "pos" || (v === "users" ? isOwner() : isPartner()); }
 function route() {
   if (!me) return;
-  let v = location.hash.slice(1); if (!VIEWS.includes(v) || !allowed(v)) v = isPartner() ? "reports" : "daily";
+  let v = location.hash.slice(1); if (!VIEWS.includes(v) || !allowed(v)) v = isPartner() ? "reports" : "pos";
   VIEWS.forEach(n => $("view-" + n).hidden = n !== v);
   document.querySelectorAll("#tabs a").forEach(a => { a.removeAttribute("aria-current"); if (a.dataset.view === v) a.setAttribute("aria-current", "page"); });
   if (v === "monthly") loadMonth();
   if (v === "reports") loadReports();
+  if (v === "pos") loadPos();
   if (v === "users") loadUsers();
   if (v === "daily") loadRecent();
 }
